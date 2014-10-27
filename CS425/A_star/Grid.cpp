@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 
-
+using namespace std;
 ////////////////////////////////////////////////////////////////
 // create a node
 GridNode::GridNode(int nID, int row, int column, bool isC)
@@ -35,6 +35,29 @@ GridNode::~GridNode()
 
 ////////////////////////////////////////////////////////////////
 // set the node id
+
+
+void
+GridNode::setF(int i){
+	this->fValue=i;
+}
+
+int
+GridNode::getF(){
+	return this->fValue;
+}
+
+void
+GridNode::setCost(int c){
+	this->cost=c;
+}
+
+int
+GridNode::getCost(){
+	return this->cost;
+}
+
+
 void 
 GridNode::setID(int id)
 {
@@ -56,6 +79,18 @@ GridNode::setColumn(int c)
 {
 	this->cCoord = c;
 }
+
+void
+GridNode::setParent(GridNode* node){
+	node->parent=node;
+}
+
+
+GridNode*
+GridNode::getParent(){
+	return this->parent;
+}
+
 
 ////////////////////////////////////////////////////////////////
 // get the x and y coordinate of the node
@@ -105,7 +140,10 @@ GridNode::setOccupied()
 bool 
 GridNode::isClear()
 {
-	return this->clear;
+	if (this->clear==false && this->contains=='B'){
+		return false;
+	}
+	return true;
 }
 
 
@@ -133,6 +171,9 @@ Grid::Grid(Ogre::SceneManager* mSceneMgr, int numRows, int numCols)
 			n->setID(count);
 			count++;
 		}
+}
+Grid::Grid(){
+
 }
 
 /////////////////////////////////////////
@@ -177,7 +218,7 @@ Grid::getNorthNode(GridNode *n)
 GridNode* 
 Grid::getSouthNode(GridNode* n)
 {
-	if (n->getRow()+1<=this->nRows){
+	if (n->getRow()+1<=this->nRows-1){
 		GridNode* temp=this->getNode(n->getRow()+1, n->getColumn());
 		if (temp->isClear()==1){
 			//std::cout<<"South node is available!"<<std::endl;
@@ -199,7 +240,7 @@ Grid::getSouthNode(GridNode* n)
 GridNode* 
 Grid::getEastNode(GridNode* n)
 {
-	if (n->getColumn()+1<=this->nCols){
+	if (n->getColumn()+1<=this->nCols-1){
 		GridNode* temp=this->getNode(n->getRow(), n->getColumn()+1);
 		if (temp->isClear()==1){
 			//std::cout<<"East node is available!"<<std::endl;
@@ -242,7 +283,7 @@ Grid::getWestNode(GridNode* n)
 GridNode* 
 Grid::getNENode(GridNode* n)  
 {
-	if (n->getRow()-1>=0 && n->getColumn()+1<=this->nCols){
+	if (n->getRow()-1>=0 && n->getColumn()+1<=this->nCols-1){
 		GridNode* temp=this->getNode(n->getRow()-1, n->getColumn()+1);
 		if (temp->isClear()==1){
 			//std::cout<<"NE node is available!"<<std::endl;
@@ -284,7 +325,7 @@ Grid::getNWNode(GridNode* n)
 GridNode* 
 Grid::getSENode(GridNode* n) 
 {
-	if (n->getRow()+1<=this->nRows && n->getColumn()+1<=this->nCols){
+	if (n->getRow()+1<=this->nRows-1 && n->getColumn()+1<=this->nCols-1){
 		GridNode* temp=this->getNode(n->getRow()+1, n->getColumn()+1);
 		if (temp->isClear()==1){
 			//std::cout<<"SE node is available!"<<std::endl;
@@ -305,7 +346,7 @@ Grid::getSENode(GridNode* n)
 GridNode* 
 Grid::getSWNode(GridNode* n) 
 {
-	if (n->getRow()+1<=this->nRows && n->getColumn()-1>=0){
+	if (n->getRow()+1<=this->nRows-1 && n->getColumn()-1>=0){
 		GridNode* temp=this->getNode(n->getRow()+1, n->getColumn()-1);
 		if (temp->isClear()==1){
 			//std::cout<<"SW node is available!"<<std::endl;
@@ -328,7 +369,7 @@ GridNode* Grid::getAllNeighbors(GridNode* n){
 	//GridNode* temp2=this->getNode(8, 14);
 
 	//std::cout<<getDistance(temp,temp2)<<std::endl;
-	
+	//std::cout<<n->getRow()<<" "<<n->getColumn()<<std::endl;
 	getNorthNode(n);		  
 	getSouthNode(n);
 	getEastNode(n);
@@ -347,8 +388,8 @@ GridNode* Grid::getAllNeighbors(GridNode* n){
 int 
 Grid::getDistance(GridNode* node1, GridNode* node2)
 {
-	int manhat= abs(node1->getColumn()-node2->getColumn())+abs(node1->getRow()-node2->getRow());
-	return manhat*10;
+	int manhat= abs(node1->getColumn()-node2->getColumn())*10+abs(node1->getRow()-node2->getRow())*10;
+	return manhat;
 	//|x1 - x2| + |y1 - y2|
 	//then returns above statement multiplied by 10 to get value
 }
@@ -356,11 +397,16 @@ Grid::getDistance(GridNode* node1, GridNode* node2)
 ///////////////////////////////////////////////////////////////////////////////
 // Print out the grid in ASCII
 void 
-Grid::printToFile()
+Grid::printToFile(int count)
 {
 	std::string path = __FILE__; //gets the current cpp file's path with the cpp file
 	path = path.substr(0,1+path.find_last_of('\\')); //removes filename to leave path
-	path+= "Grid.txt"; //if txt file is in the same directory as cpp file
+	string base="Grid";
+	string ct=to_string(count);			//concatenate count with grid to name the file correctly
+	if (count==0) path+= base+".txt"; //if txt file is in the same directory as cpp file
+	else{
+		path+= base+ct+".txt"; //if not the blank grid aka if count!= 0
+	}
 	std::ofstream outFile;
 	outFile.open(path);
 

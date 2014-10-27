@@ -1,15 +1,14 @@
 #include "GameApplication.h"
-//#include "Grid.h" // Lecture 5
+#include "Grid.h" // Lecture 5
 #include <fstream>
 #include <sstream>
 #include <map> 
 
+using namespace std;
 //-------------------------------------------------------------------------------------
 GameApplication::GameApplication(void)
 {
-
 	agent = NULL; // Init member data
-	//Ggrid= NULL;
 }
 //-------------------------------------------------------------------------------------
 GameApplication::~GameApplication(void)
@@ -90,8 +89,10 @@ GameApplication::loadEnv()
 	mSceneMgr->getRootSceneNode()->attachObject(floor);
 
 	
-	Grid grid(mSceneMgr, z, x); // Set up the grid. z is rows, x is columns	
-	Ggrid=&grid;
+	Grid Newgrid(mSceneMgr, z, x); // Set up the grid. z is rows, x is columns	
+	//Grid grid(mSceneMgr,z,x);
+	grid= Newgrid;
+	grid.count=0;	//sets count to 0
 	
 	string buf;
 	inputfile >> buf;	// Start looking for the Objects section
@@ -150,6 +151,7 @@ GameApplication::loadEnv()
 					agent = new Agent(this->mSceneMgr, getNewName(), rent->filename, rent->y, rent->scale);
 					agentList.push_back(agent);
 					agent->setPosition(grid.getPosition(i,j).x, rent->y, grid.getPosition(i,j).z);
+					agent->current= grid.getNode(i,j);
 					//agent->gridPosx=grid.getPosition(i,j).x;
 					//agent->gridPosy=grid.getPosition(i,j).y;
 					
@@ -195,7 +197,8 @@ GameApplication::loadEnv()
 	objs.clear(); // calls their destructors if there are any. (not good enough)
 	
 	inputfile.close();
-	grid.printToFile(); // see what the initial grid looks like.
+	grid.printToFile(0); // see what the initial grid looks like.
+
 }
 
 void // Set up lights, shadows, etc
@@ -227,52 +230,8 @@ GameApplication::setupEnv()
 void // Load other props or objects
 GameApplication::loadObjects()
 {
+		//loading in from file now instead
 
-	// Lecture 5: comment out all because loading from file
-	//using namespace Ogre;
-	//
-	//Ogre::Entity *ent;
-	//Ogre::SceneNode *node;
-
-	///////////////////////////////////////////////////////////////////////////////////////////////////////
-	//// Lecture 4-hold
-	//ent = mSceneMgr->createEntity("Gun", "38pistol.mesh");
-	//node = mSceneMgr->getRootSceneNode()->createChildSceneNode("GunNode", Ogre::Vector3(5.0f, 1.4f,  5.0f));
-	//node->attachObject(ent);
-	//node->pitch(Degree(90));
-	//node->setScale(0.1f, 0.1f, 0.1f);
-
-	//ent = mSceneMgr->createEntity("Gun2", "9mm.mesh");
-	//node = mSceneMgr->getRootSceneNode()->createChildSceneNode("GunNode2", Ogre::Vector3(5.0f, 1.4f,  5.0f));
-	//node->attachObject(ent);
-	//node->pitch(Degree(90));
-	//node->setScale(0.1f, 0.1f, 0.1f);
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-	///////////////////////////////////////////////////////////////////////
-	//// Draw a line: Lecture 4
-	//Ogre::ManualObject* myManualObject =  mSceneMgr->createManualObject("manual1"); 
-	//Ogre::SceneNode* myManualObjectNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("manual1_node"); 
- //
-	//// NOTE: The second parameter to the create method is the resource group the material will be added to.
-	//// If the group you name does not exist (in your resources.cfg file) the library will assert() and your program will crash
-	//Ogre::MaterialPtr myManualObjectMaterial = Ogre::MaterialManager::getSingleton().create("manual1Material","General"); 
-	//myManualObjectMaterial->setReceiveShadows(false); 
-	//myManualObjectMaterial->getTechnique(0)->setLightingEnabled(true); 
-	//myManualObjectMaterial->getTechnique(0)->getPass(0)->setDiffuse(1,0,0,0); 
-	//myManualObjectMaterial->getTechnique(0)->getPass(0)->setAmbient(1,0,0); 
-	//myManualObjectMaterial->getTechnique(0)->getPass(0)->setSelfIllumination(1,0,0); 
-	////myManualObjectMaterial->dispose();  // dispose pointer, not the material
- // 
-	//myManualObject->begin("manual1Material", Ogre::RenderOperation::OT_LINE_LIST); 
-	//myManualObject->position(3, 2, 1); 
-	//myManualObject->position(8, 1, 0); 
-	//// etc 
-	//myManualObject->end(); 
- //
-	//myManualObjectNode->attachObject(myManualObject);
-	/////////////////////////////////////////////////////////////////////
 }
 
 void // Load actors, agents, characters
@@ -294,17 +253,17 @@ GameApplication::addTime(Ogre::Real deltaTime)
 			(*iter)->update(deltaTime);
 }
 
-void
-GameApplication::moveToNode(int r, int c, Agent* agent, Grid *grid){
-	std::cout<<"here"<<std::endl;
-	Ogre::Vector3 temp;
-	temp=grid->getPosition(r,c);
-	Ogre::Vector3 vec(r, 0,c);
-	//grid.getPosition(r,c);
-	//move agent to [x], [z] from getPosition
+/*void				//pdf says to implement a* in agent class instead of this???
+GameApplication::moveToNode(GridNode* node, Agent* agent, Grid grid){
+	Ogre::Vector3 temp;					//create temp vector to store grid coords
 
-
-}
+	int r=node->getRow();				//get row number
+	int c= node->getColumn();			//get column number
+	temp=grid.getPosition(r,c);			//store grid coords in temp	 
+	Ogre::Vector3 vec(temp.x, agent->getHeight(),temp.z);		//create vector based off of grid coordinates for the ogre to walk to
+	agent->addWalk(vec);				//takes vec as a param and moves the ogre to the coordinates of vec
+	//agent->setPosition(temp.x, agent->getHeight(), temp.z);		//this ignores walkspeed and all that fun stuff -- teleports ogre to position/*
+}*/
 
 bool 
 GameApplication::keyPressed( const OIS::KeyEvent &arg ) // Moved from BaseApplication
@@ -312,11 +271,13 @@ GameApplication::keyPressed( const OIS::KeyEvent &arg ) // Moved from BaseApplic
 	if (arg.key == OIS::KC_SPACE){
 		
 		std::list<Agent*>::iterator it=agentList.begin();		//iterates through the list of agents and calls moveToNode on each pointer to an agent
-		for (int i=0;i<agentList.size();i++){
-			int r= rand()%50;							//using world coordinates for now since I couldn't quite get passing in a node to work yet
-			int c=rand()%50;
-			Agent *temp=*it;
-			//moveToNode(r,c, temp, Ggrid);
+		for (int i=0;i<agentList.size();i++){ 
+			grid.count++;										//increase grid.count by 1 for printing
+			int r= rand()%grid.nRows;							//gets a random in in range 0 to max rows
+			int c=rand()%grid.nCols;							//gets a random int in range 0 to max columns
+			GridNode *node= grid.getNode(9, 9);			//creates pointer to node at those coordinates		///****IF YOU WANT MANUAL COORDINATES--ENTER HERE
+			Agent *temp=*it;							//sets temp to each agent in scene
+			temp->moveTo(node, grid);
 			it++;
 		}
 	}

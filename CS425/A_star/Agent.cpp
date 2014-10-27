@@ -1,8 +1,17 @@
 #include "Agent.h"
+#include <queue>
+using namespace std;
+
+struct lessThanF{				//this code is for priority queue if I can get it to work right
+	bool operator()(GridNode *node1, GridNode *node2){
+		return node1->getF()>=node2->getF();
+	}
+};
 
 Agent::Agent(Ogre::SceneManager* SceneManager, std::string name, std::string filename, float height, float scale)
 {
 	using namespace Ogre;
+
 
 	mSceneMgr = SceneManager; // keep a pointer to where this agent will be
 
@@ -37,7 +46,7 @@ Agent::~Agent(){
 void 
 Agent::setPosition(float x, float y, float z)
 {
-	this->mBodyNode->setPosition(x, y + height, z);
+	this->mBodyNode->setPosition(x,  y+this->getHeight(), z);		//the y+height is height bug discussed in class
 }
 
 // update is called at every frame from GameApplication::addTime
@@ -180,28 +189,168 @@ Agent::fadeAnimations(Ogre::Real deltaTime)
 	}
 }
 
-//void
-//Agent::moveToNode(int r, int c){
-	//mWalkList.push_back(Ogre::Vector3(c-(rand()%50), this->height, r-(rand()%50)));			//the extra mod is jsut to sometimes get them go in the -x and -z axis for now
-	//I'll get the code for this to work correctly for A*, but this is late as it is.
+void
+Agent::moveTo(GridNode *node, Grid grid){
+	//A* implemented in here
+	//node is the goal node
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	vector<GridNode*>open;				//creates an open list
+	vector<GridNode*>closed;			//creates closed list
+	this->current->setCost(0);			//sets starting cost to 0
+	//this->current->contains='S';		//sets starting node contains to S
+	open.push_back(this->current);
+	if (this->current->getID()!=node->getID() && node->isClear()){				//checks to see if the starting node is the same as the goal node
+		while (this->current->getID()!=node->getID()){							//while the current node is not the goal node-- do A*
+			if (grid.getNorthNode(this->current)){								//checks north neightbor
+				GridNode* temp=grid.getNorthNode(this->current);				//creates temp node and makes it the north node
+					open.push_back(temp);										//pushes that node onto the open list
+					temp->setParent(this->current);								//sets the parent of neighbor to the current node
+					temp->setCost(this->current->getCost()+10);					//updates cost of neighbor
+					temp->setF(temp->getCost()+grid.getDistance(temp,node));	//updates F value of neighbor
+			
+
+			//The rest of these just do the same as above, but with the specified neighbor
+			}
+			if (grid.getEastNode(this->current)){
+				GridNode* temp=grid.getEastNode(this->current);
+				
+					open.push_back(temp);
+					temp->setParent(this->current);
+					temp->setCost(this->current->getCost()+10);
+					temp->setF(temp->getCost()+grid.getDistance(temp,node));
+				
+			}
+			if (grid.getSouthNode(this->current)){
+				GridNode* temp=grid.getSouthNode(this->current);
+			
+					open.push_back(temp);
+					temp->setParent(this->current);
+					temp->setCost(this->current->getCost()+10);
+					temp->setF(temp->getCost()+grid.getDistance(temp,node));
+				
+			}
+			if (grid.getWestNode(this->current)){
+				GridNode* temp=grid.getWestNode(this->current);
+			
+					open.push_back(temp);
+					temp->setParent(this->current);
+					temp->setCost(this->current->getCost()+10);
+					temp->setF(temp->getCost()+grid.getDistance(temp,node));
+				
+			}
+			if (grid.getNENode(this->current)){
+				GridNode* temp=grid.getNENode(this->current);
+				
+					open.push_back(temp);
+					temp->setParent(this->current);
+					temp->setCost(this->current->getCost()+14);
+					temp->setF(temp->getCost()+grid.getDistance(temp,node));
+				
+			}
+			if (grid.getSENode(this->current)){
+				GridNode* temp=grid.getSENode(this->current);
+			
+					open.push_back(temp);
+					temp->setParent(this->current);
+					temp->setCost(this->current->getCost()+14);
+					temp->setF(temp->getCost()+grid.getDistance(temp,node));
+				
+			}
+			if (grid.getSWNode(this->current)){
+				GridNode* temp=grid.getSWNode(this->current);
+				/*bool chk=false;							//this code was used to check if neighbor is alread in open list, but as said in README, it wasnt working correctly
+				for (int i=0;i<open.size();i++){			//commented out for future reference and implementation
+					if (temp->getID()==open[i]->getID()){
+						chk=true;
+					}
+				}
+				if (chk==true){
+					if (temp->getCost()>this->current->getCost()+14){
+						cout<<"here"<<endl;
+						temp->setParent(this->current);
+						temp->setCost(this->current->getCost()+14);
+						temp->setF(temp->getCost()+grid.getDistance(temp,node));
+					}
+				}
+				else{*/
+					open.push_back(temp);
+					temp->setParent(this->current);
+					temp->setCost(this->current->getCost()+14);
+					temp->setF(temp->getCost()+grid.getDistance(temp,node));
+			//	}
+			}
+			if (grid.getNWNode(this->current)){
+				GridNode* temp=grid.getNWNode(this->current);				
+					open.push_back(temp);
+					temp->setParent(this->current);
+					temp->setCost(this->current->getCost()+14);
+					temp->setF(temp->getCost()+grid.getDistance(temp,node));
 	
-	//TODO
-	//Need to make it use grid coordinates instead of world coordinates
-		//--need to be able to pass in the grid correctly
-	//Get the correct animations/directions working-- I don't know why they aren't right now.
+			}
+
+			//this code finds the node in open with the minimum F val
+			GridNode* min=open[0];							//sets min to the beginning of the vector
+			int loc=0;										//keeps track of location in vector for use outside of for loop
+			for(int i=1;i<open.size();i++){
+				if (min->getF()>open[i]->getF()){			//if min F > another F val, set min to the other node
+					min=open[i];
+					loc=i;									//keep track of location in open
+					i=closed.size();
+				}
+			}
+			open.erase(open.begin()+loc);				//deletes min from open list and puts in closed list
+			closed.push_back(min);
+
+			Ogre::Vector3 next= grid.getPosition(min->getRow(), min->getColumn());		//gets coords from min and makes agent walk there
+			this->addWalk(next);
+			this->current=min;
+ 		}
+
+	}
+
+	cout<<"\n"<<closed.size()<<endl;
+	//this code goes through the closed list and sets the contain
+
+	int c=0;	
+	int x=0;
+	for (int i=1;i<closed.size()-1;i++){
+		if (c>9) {c=0;}
+		x=(c)+(int)'0';			//c is used to iterate through 0-9 and set contain as that valu
+		closed[i]->contains=x;	
+		c++;
+	}
+	closed[closed.size()-1]->contains='G';			//sets the goal node contain as G
+	grid.getNode(closed[0]->getRow(),closed[0]->getColumn())->contains='S';		//this is the only way that setting first node as S works??
+	grid.printToFile(grid.count);							//calls printToFile
 
 
-//}
+	//this is used to reset all of the grid nodes so that it contains . and values are set back to 0
+	for (int r=0;r<grid.nRows;r++){
+		for (int c=0;c<grid.nCols;c++){
+			GridNode* temp = grid.getNode(r,c);
+			temp->setCost(0);
+			temp->setParent(temp);
+			temp->setF(0);
+			if (temp->isClear()) temp->contains='.';
+		}
+	}
+	open.clear();			//deletes open list
+	closed.clear();			//deletes closed list
+
+
+}
 
 void
 Agent::addWalk(Ogre::Vector3 vec){
 	this->mWalkList.push_back(vec);
 }
 
-/*float
+float
 Agent::getHeight(){
 	return this->height;
-}*/
+}
 
 bool 
 Agent::nextLocation()

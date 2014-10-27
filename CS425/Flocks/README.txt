@@ -1,2 +1,10 @@
 **NOTES**
-Changed camera speed for bigger grid. SdkCameraMan.h .. if mvelocity!= OGRE.. delete "*2" to set back to default
+-- Changed camera speed for bigger grid. SdkCameraMan.h .. if mvelocity!= OGRE.. delete "*2" to set back to default
+-- The flocking is implemented in the flockTo method in GameApplication.cpp. The flock vectors are implemented in Agent.cpp.
+-- Sometimes, the Ogres jump around quickly when they get to the destination.
+-- Calling setPosition alwanys ends up messing with the path animations. Once the path for each agent is calculated (before it even starts rendering), since the agents last setPosition is at the goal, once it starts rendering the path animation, the agent always teleports to goal, slides back to initial position, and then proceeds to follow the path.
+-- In the flockTo (GameApplication.cpp) method, there is an initial for loop that is commented out. This loop will loop through the entire method 12 times so the flock goes to 12 points. However, it is commented out because after a little bit, the flock starts to get messy. I'm guessing that it's because the code starts calculating paths for agents to the next point before the rest of the agents arrive at the destination? The reason it is commented out is because the flock just works better if you just press the spacebar to go to the destinations instead (plus, this way you can go to as many destinations as you want! but you do have to deal with the setPosition bug mentioned above a lot more). You can uncomment the for loop if you want to see what its like.
+
+
+
+***I still can't figure out the walking animation bug. It gets to the code where the walking animations are set, but for some reason, they still don't render. When I was debugging, I had it print out true when the animations were called and false when the idle animations were called. It printed true right before the agents started "walking", so they should have been set. It then printed false once they stopped. ***

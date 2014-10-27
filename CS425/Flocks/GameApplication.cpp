@@ -153,6 +153,9 @@ GameApplication::loadEnv()
 					agent->setPosition(grid.getPosition(i,j).x, rent->y, grid.getPosition(i,j).z);
 					agent->x=grid.getPosition(i,j).x; agent->y= rent->y; agent->z= grid.getPosition(i,j).z;		//these two are basically the same thing but calling setPos creates problems.
 					agent->current= grid.getNode(i,j);
+					Ogre::Vector3 temp;
+					temp[0]=0;temp[1]=0;temp[2]=0;				//set velocity to 0 vector
+					agent->velocity=temp;
 					//agent->gridPosx=grid.getPosition(i,j).x;
 					//agent->gridPosy=grid.getPosition(i,j).y;
 					
@@ -254,35 +257,54 @@ GameApplication::addTime(Ogre::Real deltaTime)
 			(*iter)->update(deltaTime);
 }
 
+bool
+GameApplication::closeToGoal(list<Agent*> agentList, Ogre::Vector3 goal){
+	// after each loop through the list of agents to calc velocities, this checks if the center of the flock is within a given radius of the goal point, if it is, it returns true
+	Ogre::Vector3 center;
+	center[0]=0;center[1]=0;center[2]=0;
+	for (list<Agent*>::iterator it= agentList.begin(); it!=agentList.end(); it++){
+		center=center+(*it)->getPos();			//adds positions to center
+	}
+	center=center/agentList.size();			//divides by size of agent list - 1
+	if (sqrt(pow(center[0]-goal[0],2)+pow(center[2]-goal[2],2))<30){		//if distance from center to goal is < 30, return true
+		return false;
+	}
+
+	else{	return true;	}
+
+
+
+}
+
+
 void
 GameApplication::flockTo(std::list<Agent*> agentList){
-	int r=0;//rand()%10;
-	int c=rand()%10;
+	int r;
+	int c;
+	//for (int j=0;j<12;j++){
+		cout<<"Going to next point..."<<endl;
+		r=rand()%40;		//random point generator for goal point -- using grid coords for this
+		c=rand()%40;
+	
+		Ogre::Vector3 goal= grid.getPosition(r,c);		//sets goal as coordinates of random points
+		Ogre::Vector3 v1,v2,v3, v4;
+		while (closeToGoal(agentList, goal)==true){		//while the center of flock is not within radius of goal
+			for (list<Agent*>::iterator it= agentList.begin(); it!=agentList.end();++it){
+				(*it)->setPosition((*it)->x, (*it)->y,(*it)->z);		//setPosition is called here because its doing funky stuff -- mentioned in README -- worked best this way
 
+				v1=(*it)->sepVelocity(agentList);		//calculate separation velocity
+				v2=(*it)->alignVel(agentList);			//calculates alignment velocity
+				v3=(*it)->cohere(agentList);			//calculates cohere velocity
+				v4=(*it)->goToGoal(agentList, goal);	//calculates path to goal velocity
+				(*it)->velocity+=.45*v1+.55*v2+.25*v3+.75*v4;		//sums them with their weights -- a lot of guess and check so probably weights that will work better
 
-	//for (list<Agent*>::iterator it= agentList.begin(); it!=agentList.end();++it){
-	//	(*it)->setPosition((*it)->x, (*it)->y,(*it)->z);		//sets current position to wherever it is on the grid
-	//	Ogre::Vector3 temp=(*it)->getPos();			//gets current position
-
-	//	float distx=grid.getPosition(r,c)[0]-temp[0];
-	//	float distz= grid.getPosition(r,c)[2]-temp[2];
-
-	//	float incx=distx/abs(distx);
-	//	float incz= distz/abs(distz);
-
-	//	while(temp[0]!=grid.getPosition(r,c)[0] && temp[2]!=grid.getPosition(r,c)[2]){
-	//		temp[0]+=incx;
-	//		temp[2]+=incz;
-	//		(*it)->addWalk(temp);
-	//		//(*it)->update();
-	//		cout<<temp[0]<<endl;
-	//	}
-
-	//	(*it)->x=temp[0]; (*it)->z=temp[2];		//used to set position of agent without calling setPosition() -- does some odd animations when called 		
+				Ogre::Vector3 temp= (*it)->getPos()+(*it)->velocity;		//adds velocity to current position
+				(*it)->addWalk(temp);
+				(*it)->x=temp[0]; (*it)->z=temp[2];		//temp variables for position of agent to deal with setPosition bug
+			}
+		}
 	//}
 
-	//create a path of points that leads to goal -- a^2+b^2=c^2 -- follow c
-	//make average of agents mdirection face the next point on the list
 }
 
 bool 

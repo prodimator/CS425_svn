@@ -23,6 +23,7 @@ public:
 	void loadCharacters();	// Load actors, agents, characters
 	void moveToNode(GridNode* node, Agent* agent, Grid g);
 	void flockTo(std::list<Agent*> agentList);
+	bool closeToGoal(std::list<Agent*> agentList, Ogre::Vector3 goal);
 
 	void addTime(Ogre::Real deltaTime);		// update the game state
 

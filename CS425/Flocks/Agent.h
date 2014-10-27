@@ -13,7 +13,7 @@ private:
 	Ogre::SceneManager* mSceneMgr;		// pointer to scene graph
 	Ogre::SceneNode* mBodyNode;			
 	Ogre::Entity* mBodyEntity;
-	float getSepVel;
+	//float sepVel;
 	float height;						// height the character should be moved up
 	float scale;						// scale of character from original model
 
@@ -72,6 +72,7 @@ public:
 
 	float getHeight();
 	Ogre::Vector3 getPos();
+	Ogre::Vector3 velocity;
 	float x;
 	float y; 
 	float z;
@@ -79,8 +80,12 @@ public:
 	void update(Ogre::Real deltaTime);		// update the agent
 	void addWalk(Ogre::Vector3 vec);		//adds node to walklist
 	void moveTo(GridNode* node, Grid grid);
-	
-	void sepVelocity(std::list<Agent*> agentList);
+		
+	//float getSepVel();
+	Ogre::Vector3 sepVelocity(std::list<Agent*> agentList);
+	Ogre::Vector3 alignVel(std::list<Agent*> agentList);
+	Ogre::Vector3 cohere(std::list<Agent*> agentList);
+	Ogre::Vector3 goToGoal(std::list<Agent*> agentList, Ogre::Vector3 goal);
 	void setBaseAnimation(AnimID id, bool reset = false);	// choose animation to display
 	void setTopAnimation(AnimID id, bool reset = false);
 

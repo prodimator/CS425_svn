@@ -1,7 +1,11 @@
-#pragma once
+
 #include "BaseApplication.h"
+#include "Grid.h"
+#include <vector>
 
 #include <deque>
+
+
 
 class Agent
 {
@@ -65,12 +69,13 @@ public:
 	void setPosition(float x, float y, float z);
 	int gridPosx;			//uhh yeah...public
 	int gridPosy;
-	//float getHeight();
+	GridNode* current;
+
+	float getHeight();
 
 	void update(Ogre::Real deltaTime);		// update the agent
-	void addWalk(Ogre::Vector3 vec);
-
-	//void moveToNode(int r, int c);			//can't figure out how to pass in node correctly
+	void addWalk(Ogre::Vector3 vec);		//adds node to walklist
+	void moveTo(GridNode* node, Grid grid);
 	
 	void setBaseAnimation(AnimID id, bool reset = false);	// choose animation to display
 	void setTopAnimation(AnimID id, bool reset = false);

@@ -195,11 +195,72 @@ Agent::fadeAnimations(Ogre::Real deltaTime)
 		}
 	}
 }
-void
+
+Ogre::Vector3
 Agent::sepVelocity(list<Agent*> agentList){
-
-
+	//this code finds the separation velocity
+	Ogre::Vector3 c;
+	c[0]=0; c[1]=0;c[2]=0;
+	for (list<Agent*>::iterator it= agentList.begin(); it!=agentList.end();++it){		//loops through all agents
+		if (this!=(*it)){
+			if (sqrt(pow(this->getPos()[0]-(*it)->getPos()[0],2)+pow(this->getPos()[2]-(*it)->getPos()[2],2))<12){			//if distance between current agent and agent from list is < 12, move away
+				c= c- ((*it)->getPos()-this->getPos());
+			}
+		}
+	}
+	return c;
 }
+
+
+Ogre::Vector3
+Agent::alignVel(list<Agent*> agentList){
+	//calculates average velocity of all of the agents and makes them all match it
+	Ogre::Vector3 velocity;
+	velocity[0]=0; velocity[1]=0;velocity[2]=0;
+	for (list<Agent*>::iterator it= agentList.begin(); it!=agentList.end(); it++){
+		if (this!=(*it)){			//loop through list, add currents velocity to sum velocity
+			velocity[0]=velocity[0]+(*it)->velocity[0];
+			velocity[2]=velocity[2]+(*it)->velocity[2];
+		}
+	}
+	velocity=velocity/(agentList.size()-1);		//divide sum of all velocities by the number of agents -1
+	return (velocity-this->velocity);
+}
+
+
+Ogre::Vector3
+Agent::cohere(list<Agent*> agentList){
+	//this finds the center of the flock and makes the agents move towards it
+	Ogre::Vector3 center;
+	center[0]=0; center[1]=0;center[2]=0;
+	for (list<Agent*>::iterator it= agentList.begin(); it!=agentList.end(); it++){
+		if (this!=(*it)){
+			center[0]=center[0]+(*it)->getPos()[0];			//sums all positions
+			center[2]=center[2]+(*it)->getPos()[2];
+		}
+	}
+	center=center/(agentList.size()-1);		//divides sum by the number of agents - 1
+	center=(center-this->getPos());///100;
+	center[1]=0;
+	return center;
+}
+
+Ogre::Vector3
+Agent::goToGoal(list<Agent*> agentList, Ogre::Vector3 goal){
+	//gets a velocity that aims agent towards goal
+	Ogre::Vector3 path;
+	path[0]=0; path[1]=0;path[2]=0;
+	for (list<Agent*>::iterator it= agentList.begin(); it!=agentList.end(); it++){
+		if (this!=(*it)){			//distance to goal / 100 makes the agent move 1% of the way to the goal each step
+			path[0]=(goal[0]-this->getPos()[0])/100;
+			path[2]=(goal[2]-this->getPos()[2])/100;
+		}
+	}
+	return path;
+}
+
+
+
 
 
 void
@@ -223,13 +284,11 @@ Agent::nextLocation()
 {
 	if (mWalkList.empty())
              return false;
-
 	mDestination = mWalkList.front();  // this gets the front of the deque
         mWalkList.pop_front();             // this removes the front of the deque
  
-        mDirection = mDestination - mBodyNode->getPosition();
+       mDirection = mDestination - mBodyNode->getPosition();
         mDistance = mDirection.normalise();
-
 	return true;
 }
 
@@ -259,7 +318,7 @@ Agent::updateLocomote(Ogre::Real deltaTime)
 				 // Set animation based on if the robot has another point to walk to. 
                 if (! nextLocation())
                 {
-                    // Set Idle animation                     
+                    // Set Idle animation   
                     setTopAnimation(ANIM_IDLE_TOP);
 					setBaseAnimation(ANIM_IDLE_BASE);
                 } 
